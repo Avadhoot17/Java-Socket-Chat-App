@@ -1,12 +1,11 @@
-// ===============================
-// FILE: ChatServer.java
-// =================================
-
 import java.io.*;
 import java.net.*;
 import java.util.*;
 
-public class ChatServer {
+// ===============================
+// MAIN SERVER CLASS
+// ===============================
+public class Main {
 
     private static final int PORT = 5000;
     private static Set<ClientHandler> clients = new HashSet<>();
@@ -28,7 +27,6 @@ public class ChatServer {
         }
     }
 
-    // Broadcast message to all clients
     public static void broadcast(String message, ClientHandler excludeUser) {
         for (ClientHandler client : clients) {
             if (client != excludeUser) {
@@ -37,17 +35,14 @@ public class ChatServer {
         }
     }
 
-    // Remove disconnected client
     public static void removeClient(ClientHandler client) {
         clients.remove(client);
     }
 }
 
-
 // ===============================
-// FILE: ClientHandler.java
+// CLIENT HANDLER CLASS
 // ===============================
-
 class ClientHandler implements Runnable {
 
     private Socket socket;
@@ -59,7 +54,6 @@ class ClientHandler implements Runnable {
         this.socket = socket;
     }
 
-    @Override
     public void run() {
         try {
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -68,26 +62,22 @@ class ClientHandler implements Runnable {
             out.println("Enter your name:");
             userName = in.readLine();
 
-            ChatServer.broadcast(userName + " joined the chat!", this);
+            Main.broadcast(userName + " joined the chat!", this);
 
             String message;
             while ((message = in.readLine()) != null) {
-                if (message.equalsIgnoreCase("exit")) {
-                    break;
-                }
+                if (message.equalsIgnoreCase("exit")) break;
 
-                ChatServer.broadcast(userName + ": " + message, this);
+                Main.broadcast(userName + ": " + message, this);
             }
 
         } catch (IOException e) {
             System.out.println("Connection error with client: " + userName);
         } finally {
-            try {
-                socket.close();
-            } catch (IOException ignored) {}
+            try { socket.close(); } catch (IOException ignored) {}
 
-            ChatServer.removeClient(this);
-            ChatServer.broadcast(userName + " left the chat.", this);
+            Main.removeClient(this);
+            Main.broadcast(userName + " left the chat.", this);
             System.out.println(userName + " disconnected.");
         }
     }
@@ -97,15 +87,10 @@ class ClientHandler implements Runnable {
     }
 }
 
-
 // ===============================
-// FILE: ChatClient.java
+// CLIENT CLASS (run separately if needed)
 // ===============================
-
-import java.io.*;
-import java.net.*;
-
-public class ChatClient {
+class ChatClient {
 
     private static final String SERVER_ADDRESS = "localhost";
     private static final int SERVER_PORT = 5000;
@@ -118,31 +103,25 @@ public class ChatClient {
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
              BufferedReader console = new BufferedReader(new InputStreamReader(System.in))) {
 
-            // Thread to read messages from server
             new Thread(() -> {
                 try {
-                    String serverMsg;
-                    while ((serverMsg = in.readLine()) != null) {
-                        System.out.println(serverMsg);
+                    String msg;
+                    while ((msg = in.readLine()) != null) {
+                        System.out.println(msg);
                     }
                 } catch (IOException e) {
                     System.out.println("Disconnected from server.");
                 }
             }).start();
 
-            // Send messages from console to server
-            String userInput;
-            while ((userInput = console.readLine()) != null) {
-                out.println(userInput);
-
-                if (userInput.equalsIgnoreCase("exit")) {
-                    break;
-                }
+            String input;
+            while ((input = console.readLine()) != null) {
+                out.println(input);
+                if (input.equalsIgnoreCase("exit")) break;
             }
 
         } catch (IOException e) {
             System.out.println("Unable to connect to server.");
-            e.printStackTrace();
         }
     }
 }
